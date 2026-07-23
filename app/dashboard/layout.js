@@ -4,6 +4,12 @@ import { fetchProfile } from '@/lib/queries';
 import SignOutButton from '@/components/SignOutButton';
 import TabNav from '@/components/TabNav';
 
+// Without this, Next.js can cache the profile lookup below (admin/viewer role) the first time
+// this layout renders and keep serving that stale cached result on later visits, even after the
+// role changes in the database and the browser is hard-refreshed. force-dynamic makes sure this
+// always re-checks the database on every request.
+export const dynamic = 'force-dynamic';
+
 export default async function DashboardLayout({ children }) {
   const supabase = createClient();
   const {
