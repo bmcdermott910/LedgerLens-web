@@ -30,3 +30,17 @@ tr.total-row td{font-weight:700;border-top:1.5px solid var(--navy2);}
 .login-box button{width:100%;padding:9px 10px;background:var(--navy);color:#fff;border:none;border-radius:6px;font-size:14px;cursor:pointer;}
 .login-box button:disabled{opacity:.6;cursor:default;}
 .signout-btn{background:transparent;border:1px solid #3a5a86;color:#fff;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;}
+ 
+tr.clickable-row{cursor:pointer;}
+tr.clickable-row:hover td{background:#eef3fc;}
+ 
+.drilldown-overlay{position:fixed;inset:0;background:rgba(15,42,74,.45);display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto;z-index:100;}
+.drilldown-panel{background:var(--card);border-radius:10px;padding:22px 24px;max-width:900px;width:100%;box-shadow:0 12px 40px rgba(15,42,74,.25);}
+.drilldown-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.drilldown-header h3{margin:0;font-size:16px;color:var(--navy);}
+.drilldown-close{background:transparent;border:none;font-size:22px;line-height:1;color:var(--muted);cursor:pointer;padding:2px 6px;}
+.drilldown-close:hover{color:var(--text);}
+.drilldown-error{color:var(--red);font-size:13px;}
+.drilldown-table{font-size:12.5px;}
+.drilldown-table th{text-align:left;}
+.drilldown-table th:last-child, .drilldown-table td:last-child{text-align:right;}
