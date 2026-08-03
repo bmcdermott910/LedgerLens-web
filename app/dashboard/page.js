@@ -1,31 +1,39 @@
-import { notFound } from 'next/navigation';
-import { PERIODS, TABS, combinedRows } from '@/lib/finance';
+import { PERIODS, combinedRows, computeBuckets } from '@/lib/finance';
 import { fetchGlRows } from '@/lib/queries';
 import PeriodTabs from '@/components/PeriodTabs';
-import GlTable from '@/components/GlTable';
- 
+import BucketCard from '@/components/BucketCard';
+
 export const dynamic = 'force-dynamic';
- 
-export default async function ClassPage({ params, searchParams }) {
-  const tab = TABS.find((t) => t.key === params.cls);
-  if (!tab) notFound();
- 
+
+const SECTIONS = [
+  { label: 'Wendal Inc. (RIA + IJT + Admin)', classes: ['RIA', 'IJT', 'Admin'] },
+  { label: 'Connetic RIA (RIA)', classes: ['RIA'] },
+  { label: 'InnerJoin Technologies (IJT)', classes: ['IJT'] },
+  { label: 'Admin', classes: ['Admin'] },
+];
+
+export default async function BoardSummaryPage({ searchParams }) {
   const periodKey = searchParams?.period || 'ytd_current';
   const period = PERIODS.find((p) => p.key === periodKey) || PERIODS[3];
- 
-  const rows = await fetchGlRows(tab.classes, period.months);
-  const combined = combinedRows(rows);
- 
+
+  const sections = await Promise.all(
+    SECTIONS.map(async (s) => {
+      const rows = await fetchGlRows(s.classes, period.months);
+      const buckets = computeBuckets(combinedRows(rows));
+      return { ...s, buckets };
+    })
+  );
+
   return (
     <div>
       <div className="card">
-        <h2>{tab.label} — Actual vs. Budget by GL Account</h2>
-        <PeriodTabs current={period.key} basePath={`/dashboard/${tab.key}`} />
+        <h2>Board Presentation — Actual vs. Budget</h2>
+        <PeriodTabs current={period.key} basePath="/dashboard" />
+        <p className="small-muted">Freedom IOT is intentionally excluded from LedgerLens.</p>
       </div>
-      <div className="card">
-        <GlTable rows={combined} classKeys={tab.classes} monthKeys={period.months} />
-      </div>
+      {sections.map((s) => (
+        <BucketCard key={s.label} title={s.label} buckets={s.buckets} />
+      ))}
     </div>
   );
 }
- 
