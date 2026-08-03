@@ -11,6 +11,7 @@ import TransactionDrilldown from './TransactionDrilldown';
 export default function GlTable({ rows, classKeys, monthKeys }) {
   const [selectedAccount, setSelectedAccount] = useState(null);
   let lastSection = null;
+  const visibleRows = rows.filter((r) => r.actual !== 0 || r.budget !== 0);
  
   return (
     <>
@@ -19,7 +20,7 @@ export default function GlTable({ rows, classKeys, monthKeys }) {
           <tr><th>Account</th><th>Actual</th><th>Budget</th><th>Fav/(Unfav)</th></tr>
         </thead>
         <tbody>
-          {rows.map((r, i) => {
+          {visibleRows.map((r, i) => {
             const showHeader = r.section !== lastSection && !r.subtotal;
             if (showHeader) lastSection = r.section;
             const flip = isFlippedRow(r);
@@ -58,4 +59,3 @@ export default function GlTable({ rows, classKeys, monthKeys }) {
     </>
   );
 }
- 
