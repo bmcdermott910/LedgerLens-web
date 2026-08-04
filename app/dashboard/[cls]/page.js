@@ -1,10 +1,12 @@
 import { notFound } from 'next/navigation';
-import { PERIODS, TABS, TREND_MONTHS, combinedRows, combineWagesByPerson, buildTrendSeries } from '@/lib/finance';
-import { fetchGlRows, fetchWagesByPerson, fetchEmployeeBudgets } from '@/lib/queries';
+import { PERIODS, TABS, TREND_MONTHS, combinedRows, combineWagesByPerson, buildTrendSeries, buildForecastRows } from '@/lib/finance';
+import { fetchGlRows, fetchWagesByPerson, fetchEmployeeBudgets, fetchForecastRows, fetchForecastRules, fetchForecastOverrides } from '@/lib/queries';
+import { createClient } from '@/lib/supabase/server';
 import PeriodTabs from '@/components/PeriodTabs';
 import GlTable from '@/components/GlTable';
 import WageTable from '@/components/WageTable';
 import TrendChart from '@/components/TrendChart';
+import ForecastTable from '@/components/ForecastTable';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +28,24 @@ export default async function ClassPage({ params, searchParams }) {
   const people = combineWagesByPerson(wageRows, budgetRows, tab.classes, period.months.length);
   const trend = buildTrendSeries(trendRows, TREND_MONTHS);
 
+  // The forecast/what-if view only makes sense on the "YTD thru last completed month" period --
+  // same as the old HTML prototype -- since forecast months (July-Dec) pick up right where that
+  // period's actuals leave off.
+  const showForecast = period.key === 'ytd_prior';
+  let forecastRowsBuilt = null;
+  if (showForecast) {
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const [baseline, rules, overrides] = await Promise.all([
+      fetchForecastRows(tab.classes),
+      fetchForecastRules(),
+      user ? fetchForecastOverrides(supabase, user.id, tab.key) : Promise.resolve([]),
+    ]);
+    forecastRowsBuilt = buildForecastRows(baseline, rules, overrides, tab.classes);
+  }
+
   return (
     <div>
       <div className="card">
@@ -35,6 +55,18 @@ export default async function ClassPage({ params, searchParams }) {
       <div className="card">
         <GlTable rows={combined} classKeys={tab.classes} monthKeys={period.months} />
       </div>
+      {showForecast && (
+        <div className="card">
+          <h2>2026 Forecast — What If</h2>
+          <p className="small-muted">
+            Default forecast follows each account&apos;s standard method (trailing 3-month average,
+            wage-based, or % of another account). Click any Monthly Forecast value to enter your
+            own what-if number -- accounts calculated as a % of another account will update
+            automatically. Click the × next to a custom value to reset it back to default.
+          </p>
+          <ForecastTable rows={forecastRowsBuilt} tabKey={tab.key} />
+        </div>
+      )}
       <div className="card">
         <h2>Wages by Person</h2>
         <WageTable people={people} />
