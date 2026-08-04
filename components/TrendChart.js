@@ -1,5 +1,16 @@
 import { fmt } from '@/lib/finance';
 
+// Compact dollar formatting for Y-axis tick labels, e.g. 45000 -> "$45k", -1250000 -> "-$1.3M".
+function fmtAxis(n) {
+  const neg = n < 0;
+  const abs = Math.abs(n);
+  let s;
+  if (abs >= 1_000_000) s = (abs / 1_000_000).toFixed(1) + 'M';
+  else if (abs >= 1_000) s = Math.round(abs / 1000) + 'k';
+  else s = Math.round(abs).toString();
+  return (neg ? '-$' : '$') + s;
+}
+
 // Simple actual-vs-budget line chart rendered as raw SVG -- no charting library dependency,
 // since adding one to this project would mean pasting a large package-lock.json through the
 // GitHub web editor, which isn't practical with how we're shipping changes right now.
@@ -23,12 +34,30 @@ export default function TrendChart({ title, series }) {
 
   const zeroY = y(0);
 
+  // 4 evenly-spaced Y-axis ticks from min to max of the plotted range.
+  const tickCount = 4;
+  const ticks = Array.from({ length: tickCount + 1 }, (_, i) => minV + (range * i) / tickCount);
+
   return (
     <div className="trend-chart">
       <h3>{title}</h3>
       <svg viewBox={`0 0 ${width} ${height}`} width="100%" height={height}>
-        {/* zero baseline */}
-        <line x1={padding.left} y1={zeroY} x2={width - padding.right} y2={zeroY} stroke="#e2e6ec" strokeWidth="1" />
+        {/* Y-axis gridlines + labels */}
+        {ticks.map((t, i) => (
+          <g key={`tick-${i}`}>
+            <line
+              x1={padding.left} y1={y(t)} x2={width - padding.right} y2={y(t)}
+              stroke="#eef1f5" strokeWidth="1"
+            />
+            <text x={padding.left - 8} y={y(t) + 3} fontSize="10" fill="#6b7685" textAnchor="end">
+              {fmtAxis(t)}
+            </text>
+          </g>
+        ))}
+        {/* zero baseline (bolder if zero falls within the range) */}
+        {minV < 0 && maxV > 0 && (
+          <line x1={padding.left} y1={zeroY} x2={width - padding.right} y2={zeroY} stroke="#c7cedb" strokeWidth="1.2" />
+        )}
         {/* budget line (dashed, muted) */}
         <path d={linePath('budget')} fill="none" stroke="#6b7685" strokeWidth="1.5" strokeDasharray="4,3" />
         {/* actual line (solid, accent) */}
