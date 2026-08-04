@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { PERIODS, TABS, TREND_MONTHS, combinedRows, combineWagesByPerson, buildTrendSeries, buildForecastRows } from '@/lib/finance';
+import { PERIODS, TABS, TREND_MONTHS, combinedRows, combineWagesByPerson, buildTrendSeries, buildForecastRows, reorderToMatch } from '@/lib/finance';
 import { fetchGlRows, fetchWagesByPerson, fetchEmployeeBudgets, fetchForecastRows, fetchForecastRules, fetchForecastOverrides } from '@/lib/queries';
 import { createClient } from '@/lib/supabase/server';
 import PeriodTabs from '@/components/PeriodTabs';
@@ -43,7 +43,7 @@ export default async function ClassPage({ params, searchParams }) {
       fetchForecastRules(),
       user ? fetchForecastOverrides(supabase, user.id, tab.key) : Promise.resolve([]),
     ]);
-    forecastRowsBuilt = buildForecastRows(baseline, rules, overrides, tab.classes);
+    forecastRowsBuilt = reorderToMatch(buildForecastRows(baseline, rules, overrides, tab.classes), combined);
   }
 
   return (
@@ -51,6 +51,7 @@ export default async function ClassPage({ params, searchParams }) {
       <div className="card">
         <h2>{tab.label} — Actual vs. Budget by GL Account</h2>
         <PeriodTabs current={period.key} basePath={`/dashboard/${tab.key}`} />
+        <p className="small-muted">Click on amounts in the Actual column to see the detail of the account.</p>
       </div>
       <div className="card">
         <GlTable rows={combined} classKeys={tab.classes} monthKeys={period.months} />

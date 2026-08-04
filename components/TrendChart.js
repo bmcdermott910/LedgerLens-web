@@ -81,7 +81,7 @@ export default function TrendChart({ title, series }) {
         <span><i className="dot actual" /> Actual</span>
         <span><i className="dot budget" /> Budget</span>
         <span className="small-muted">
-          Latest: {fmt(series[series.length - 1]?.actual)} actual / {fmt(series[series.length - 1]?.budget)} budget
+          YTD: {fmt(series.reduce((sum, d) => sum + (d.actual || 0), 0))} actual / {fmt(series.reduce((sum, d) => sum + (d.budget || 0), 0))} budget
         </span>
       </div>
     </div>

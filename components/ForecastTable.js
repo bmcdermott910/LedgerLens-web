@@ -82,6 +82,7 @@ export default function ForecastTable({ rows, tabKey }) {
       <thead>
         <tr>
           <th>Account</th>
+          <th>Default Forecast Method</th>
           <th>Monthly Forecast</th>
           <th>2026 Forecast</th>
           <th>2026 Budget</th>
@@ -98,11 +99,12 @@ export default function ForecastTable({ rows, tabKey }) {
             <>
               {showHeader && (
                 <tr className="section-hdr" key={`hdr-${r.section}-${i}`}>
-                  <td colSpan={5}>{r.section || ''}</td>
+                  <td colSpan={6}>{r.section || ''}</td>
                 </tr>
               )}
               <tr key={r.account} className={r.subtotal ? 'total-row' : ''}>
                 <td style={r.subtotal ? undefined : { paddingLeft: 18 }}>{r.account}</td>
+                <td style={{ textAlign: 'left' }} className="small-muted">{r.method}</td>
                 <ForecastCell row={r} tabKey={tabKey} onSaved={() => router.refresh()} />
                 <td>{fmt(r.forecastTotal)}</td>
                 <td>{fmt(r.annualBudget)}</td>
