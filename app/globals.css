@@ -52,3 +52,9 @@ tr.clickable-row:hover td{background:#eef3fc;}
 .trend-legend .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;}
 .trend-legend .dot.actual{background:#2f6fed;}
 .trend-legend .dot.budget{background:#6b7685;}
+
+.forecast-cell{cursor:pointer;border-bottom:1px dashed var(--muted);}
+.forecast-cell:hover{color:var(--accent);}
+.forecast-overridden{cursor:pointer;color:var(--accent);font-weight:600;border-bottom:1px dashed var(--accent);}
+.forecast-reset{background:transparent;border:none;color:var(--red);cursor:pointer;font-size:13px;margin-left:4px;padding:0 3px;line-height:1;}
+.forecast-reset:hover{color:#a83232;}
