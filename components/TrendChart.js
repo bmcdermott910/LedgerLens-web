@@ -22,8 +22,14 @@ export default function TrendChart({ title, series }) {
   const plotH = height - padding.top - padding.bottom;
 
   const values = series.flatMap((d) => [d.actual, d.budget]);
-  const maxV = Math.max(0, ...values);
-  const minV = Math.min(0, ...values);
+  const rawMax = Math.max(...values);
+  const rawMin = Math.min(...values);
+  // Zoom the Y-axis to the data's actual range (plus a little padding) instead of always
+  // forcing $0 as the floor -- a series that stays in a tight band (e.g. $150k-$180k) should
+  // show its real month-to-month movement, not look like a flat line against a $0 baseline.
+  const pad = (rawMax - rawMin) * 0.15 || Math.abs(rawMax) * 0.1 || 1;
+  const maxV = rawMax + pad;
+  const minV = rawMin - pad;
   const range = maxV - minV || 1;
 
   const x = (i) => padding.left + (i / Math.max(series.length - 1, 1)) * plotW;
