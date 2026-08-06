@@ -3,6 +3,7 @@ import { fetchGlRows, fetchCashMetrics } from '@/lib/queries';
 import PeriodTabs from '@/components/PeriodTabs';
 import BucketCard from '@/components/BucketCard';
 import MetricChart from '@/components/MetricChart';
+import AskBox from '@/components/AskBox';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,6 +46,10 @@ export default async function BoardSummaryPage({ searchParams }) {
     fetchCashMetrics(),
   ]);
 
+  // The Ask box stays hidden until an API key is configured in Vercel, so shipping this code
+  // early can't surface a feature that would only error out when someone tried it.
+  const askEnabled = Boolean(process.env.ANTHROPIC_API_KEY);
+
   // The cash metrics table is loaded independently of the GL, so the charts are driven by
   // whatever months it actually contains rather than by the selected P&L period.
   const cashSeries = cashMetrics.map((m) => ({ label: m.month_label, value: Number(m.total_cash) }));
@@ -59,6 +64,16 @@ export default async function BoardSummaryPage({ searchParams }) {
         <PeriodTabs current={period.key} basePath="/dashboard" />
         <p className="small-muted">Freedom IOT is intentionally excluded from LedgerLens.</p>
       </div>
+      {askEnabled && (
+        <div className="card">
+          <h2>Ask about these numbers</h2>
+          <p className="small-muted">
+            Ask why a line is above or below budget, or what is driving it. Answers are generated from
+            this dashboard&apos;s own figures, and the supporting numbers are shown with every answer.
+          </p>
+          <AskBox period={period.key} />
+        </div>
+      )}
       {sections.map((s) => (
         <BucketCard key={s.label} title={s.label} buckets={s.buckets} />
       ))}
