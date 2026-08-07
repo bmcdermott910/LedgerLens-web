@@ -16,12 +16,23 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
+        // Access is invite-only: the account has to already exist in Supabase Auth.
+        // Without this, ANY address typed here would create an account and inherit
+        // read access to the whole ledger.
+        shouldCreateUser: false,
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     });
     if (error) {
       setStatus('error');
-      setErrorMsg(error.message);
+      // Supabase reports "Signups not allowed for otp" when the address is not on the
+      // list. Surfaced as plain English, without confirming whether the address exists.
+      const notInvited = /signups? not allowed|otp_disabled|user not found/i.test(error.message);
+      setErrorMsg(
+        notInvited
+          ? "That address doesn't have access to LedgerLens. Contact Brian McDermott to be added."
+          : error.message
+      );
     } else {
       setStatus('sent');
     }
@@ -32,7 +43,9 @@ export default function LoginPage() {
       <h2 style={{ color: '#0f2a4a', marginTop: 0 }}>LedgerLens</h2>
       <p className="small-muted">Sign in with a magic link sent to your email. No password needed.</p>
       {status === 'sent' ? (
-        <p>Check <strong>{email}</strong> for a sign-in link.</p>
+        <p>
+          Check <strong>{email}</strong> for a sign-in link. It expires in one hour.
+        </p>
       ) : (
         <form onSubmit={sendLink}>
           <input
