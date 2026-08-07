@@ -1,7 +1,10 @@
 import { BUCKET_ROWS, fmt } from '@/lib/finance';
 import Var from './Var';
+import KeyDrivers from './KeyDrivers';
 
-export default function BucketCard({ title, buckets }) {
+// `drivers` is optional -- only the Board Presentation page passes it, so the Key Drivers
+// bullets appear there and nowhere else.
+export default function BucketCard({ title, buckets, drivers }) {
   return (
     <div className="card">
       <h2>{title}</h2>
@@ -23,6 +26,7 @@ export default function BucketCard({ title, buckets }) {
           })}
         </tbody>
       </table>
+      <KeyDrivers drivers={drivers} />
     </div>
   );
 }

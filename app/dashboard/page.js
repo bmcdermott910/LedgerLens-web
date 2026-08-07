@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { combinedRows, computeBuckets } from '@/lib/finance';
+import { combinedRows, computeBuckets, topVariances } from '@/lib/finance';
 import { buildPeriodModel, resolvePeriod } from '@/lib/periods';
 import { fetchGlRows, fetchCashMetrics, fetchMonths, fetchForecastMeta } from '@/lib/queries';
 import PeriodTabs from '@/components/PeriodTabs';
@@ -45,8 +45,10 @@ export default async function BoardSummaryPage({ searchParams }) {
     Promise.all(
       SECTIONS.map(async (s) => {
         const rows = await fetchGlRows(s.classes, period.months);
-        const buckets = computeBuckets(combinedRows(rows));
-        return { ...s, buckets };
+        // combinedRows() is computed once and used twice: the bucket summary table, and the
+        // Key Drivers bullets, which rank the individual accounts underneath those buckets.
+        const combined = combinedRows(rows);
+        return { ...s, buckets: computeBuckets(combined), drivers: topVariances(combined) };
       })
     ),
     fetchCashMetrics(),
@@ -81,7 +83,7 @@ export default async function BoardSummaryPage({ searchParams }) {
         </div>
       )}
       {sections.map((s) => (
-        <BucketCard key={s.label} title={s.label} buckets={s.buckets} />
+        <BucketCard key={s.label} title={s.label} buckets={s.buckets} drivers={s.drivers} />
       ))}
       {cashMetrics.length > 0 && (
         <div className="card">
