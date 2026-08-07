@@ -1,5 +1,7 @@
-import { PERIODS, combinedRows, computeBuckets } from '@/lib/finance';
-import { fetchGlRows, fetchCashMetrics } from '@/lib/queries';
+import { notFound } from 'next/navigation';
+import { combinedRows, computeBuckets } from '@/lib/finance';
+import { buildPeriodModel, resolvePeriod } from '@/lib/periods';
+import { fetchGlRows, fetchCashMetrics, fetchMonths, fetchForecastMeta } from '@/lib/queries';
 import PeriodTabs from '@/components/PeriodTabs';
 import BucketCard from '@/components/BucketCard';
 import MetricChart from '@/components/MetricChart';
@@ -32,8 +34,12 @@ function fmtYears(n) {
 }
 
 export default async function BoardSummaryPage({ searchParams }) {
-  const periodKey = searchParams?.period || 'ytd_current';
-  const period = PERIODS.find((p) => p.key === periodKey) || PERIODS[3];
+  // Periods and their labels are derived from the `months` table, so loading a new month rolls
+  // these buttons forward with no code change.
+  const [monthRows, forecastMeta] = await Promise.all([fetchMonths(), fetchForecastMeta()]);
+  const model = buildPeriodModel(monthRows, forecastMeta);
+  const period = resolvePeriod(model, searchParams?.period);
+  if (!period) notFound();
 
   const [sections, cashMetrics] = await Promise.all([
     Promise.all(
@@ -61,7 +67,7 @@ export default async function BoardSummaryPage({ searchParams }) {
     <div>
       <div className="card">
         <h2>Board Presentation — Actual vs. Budget</h2>
-        <PeriodTabs current={period.key} basePath="/dashboard" />
+        <PeriodTabs periods={model.periods} current={period.key} basePath="/dashboard" />
         <p className="small-muted">Freedom IOT is intentionally excluded from LedgerLens.</p>
       </div>
       {askEnabled && (

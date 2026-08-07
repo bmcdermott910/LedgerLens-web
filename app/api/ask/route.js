@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { LOOKUPS, TOOL_SCHEMAS, ENTITIES } from '@/lib/insights';
-import { PERIODS } from '@/lib/finance';
+import { LOOKUPS, buildToolSchemas, ENTITIES, loadPeriodModel, resetPeriodModelCache } from '@/lib/insights';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -70,8 +69,18 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Please keep questions under 500 characters.' }, { status: 400 });
   }
 
-  const periodKey = PERIODS.find((p) => p.key === body?.period)?.key || 'ytd_current';
-  const periodLabel = PERIODS.find((p) => p.key === periodKey).label;
+  // Rebuilt per request so a newly loaded month is reflected without a redeploy.
+  resetPeriodModelCache();
+  const model = await loadPeriodModel();
+  if (!model.periods.length) {
+    return NextResponse.json({ error: 'No reporting periods are loaded yet.' }, { status: 503 });
+  }
+  const current = model.periods.find((p) => p.key === body?.period) ||
+    model.periods.find((p) => p.key === model.defaultPeriodKey) ||
+    model.periods[model.periods.length - 1];
+  const periodKey = current.key;
+  const periodLabel = current.label;
+  const toolSchemas = buildToolSchemas(model);
   const entityList = Object.entries(ENTITIES)
     .map(([key, e]) => `${key} (${e.label})`)
     .join(', ');
@@ -101,7 +110,7 @@ Question: ${question}`,
           model: MODEL,
           max_tokens: 1500,
           system: SYSTEM_PROMPT,
-          tools: TOOL_SCHEMAS,
+          tools: toolSchemas,
           messages,
         }),
       });
