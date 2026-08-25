@@ -1,6 +1,11 @@
-import { annualBucketsFor, forecastBucketsFor } from '@/lib/finance';
-import { fetchAnnualSummary, fetchForecastRows } from '@/lib/queries';
+import {
+  annualBucketsFor, forecastBucketsFor, monthlyBurnSeries, buildQuarterlySeries,
+} from '@/lib/finance';
+import {
+  fetchAnnualSummary, fetchForecastRows, fetchCashMetrics, fetchGlRows, fetchMonths,
+} from '@/lib/queries';
 import FiveYearTable from '@/components/FiveYearTable';
+import QuarterChart from '@/components/QuarterChart';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,11 +29,35 @@ const YEARS = [
   { year: 2028, sublabel: 'Forecast' },
 ];
 
+const ALL_CLASSES = ['RIA', 'IJT', 'Admin'];
+
+// Compact dollar labels for the cash axis, e.g. 4898284 -> "$4.9M". Same as the Board Summary.
+function fmtCash(n) {
+  const neg = n < 0;
+  const abs = Math.abs(n);
+  let s;
+  if (abs >= 1_000_000) s = (abs / 1_000_000).toFixed(1) + 'M';
+  else if (abs >= 1_000) s = Math.round(abs / 1000) + 'k';
+  else s = Math.round(abs).toString();
+  return (neg ? '-$' : '$') + s;
+}
+
+function fmtYears(n) {
+  return Number(n).toFixed(2);
+}
+
 export default async function FiveYearTrendPage() {
-  const [annualRows, forecastRows] = await Promise.all([
+  const [annualRows, forecastRows, cashMetrics, monthRows] = await Promise.all([
     fetchAnnualSummary(),
-    fetchForecastRows(['RIA', 'IJT', 'Admin']),
+    fetchForecastRows(ALL_CLASSES),
+    fetchCashMetrics(),
+    fetchMonths(),
   ]);
+  const glRows = await fetchGlRows(ALL_CLASSES, monthRows.map((m) => m.key));
+
+  const burn = monthlyBurnSeries(glRows, forecastRows, monthRows);
+  const quarters = buildQuarterlySeries(cashMetrics, burn, 2026, 2028);
+  const lastReported = quarters.filter((q) => q.isActual).slice(-1)[0];
 
   const sections = ENTITIES.map((e) => ({
     label: e.label,
@@ -63,6 +92,32 @@ export default async function FiveYearTrendPage() {
       {sections.map((s) => (
         <FiveYearTable key={s.label} title={s.label} columns={s.columns} />
       ))}
+      <div className="card">
+        <h2>Cash &amp; Runway — quarterly, Q1 2026 through Q4 2028</h2>
+        <p className="small-muted">
+          Reported through {lastReported ? lastReported.label : 'n/a'}; projected after that. Cash
+          rolls forward from the last reported balance using the forecast Net Operating Income as
+          the monthly cash usage. Runway is cash divided by the average monthly burn of that
+          quarter&apos;s three months. For reported months burn is net income excluding unrealized
+          gains and losses and the one-off Freedom IOT divestiture gain, matching the CHARTS
+          workbook. 2027 and 2028 stay empty until those budgets are built.
+        </p>
+        <div className="trend-grid">
+          <QuarterChart
+            title="Total Cash &amp; Current Investments"
+            points={quarters}
+            valueKey="cash"
+            formatValue={fmtCash}
+          />
+          <QuarterChart
+            title="Doomsday Clock (Years)"
+            points={quarters}
+            valueKey="runway"
+            formatValue={fmtYears}
+            subtitle="Years of runway remaining at that quarter's average burn rate."
+          />
+        </div>
+      </div>
     </div>
   );
 }
