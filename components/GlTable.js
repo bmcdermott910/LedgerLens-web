@@ -1,7 +1,7 @@
 'use client';
  
 import { useState } from 'react';
-import { isFlippedRow, fmt } from '@/lib/finance';
+import { isFlippedRow, fmt, hideRedundantRows } from '@/lib/finance';
 import Var from './Var';
 import TransactionDrilldown from './TransactionDrilldown';
  
@@ -11,7 +11,7 @@ import TransactionDrilldown from './TransactionDrilldown';
 export default function GlTable({ rows, classKeys, monthKeys }) {
   const [selectedAccount, setSelectedAccount] = useState(null);
   let lastSection = null;
-  const visibleRows = rows.filter((r) => r.actual !== 0 || r.budget !== 0);
+  const visibleRows = hideRedundantRows(rows).filter((r) => r.actual !== 0 || r.budget !== 0);
  
   return (
     <>

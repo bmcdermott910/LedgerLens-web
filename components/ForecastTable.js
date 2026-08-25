@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { fmt, fmtVar, isFlippedRow } from '@/lib/finance';
+import { fmt, fmtVar, isFlippedRow, hideRedundantRows } from '@/lib/finance';
 
 // Each leaf row: click the monthly forecast to switch between the calculated default and a
 // custom monthly dollar amount. Overrides save per-user, per-entity-tab and cascade through any
@@ -76,6 +76,7 @@ function ForecastCell({ row, tabKey, onSaved }) {
 export default function ForecastTable({ rows, tabKey }) {
   const router = useRouter();
   let lastSection = null;
+  const visibleRows = hideRedundantRows(rows);
 
   return (
     <table>
@@ -90,7 +91,7 @@ export default function ForecastTable({ rows, tabKey }) {
         </tr>
       </thead>
       <tbody>
-        {rows.map((r, i) => {
+        {visibleRows.map((r, i) => {
           const showHeader = r.section !== lastSection && !r.subtotal;
           if (showHeader) lastSection = r.section;
           const flip = isFlippedRow(r);

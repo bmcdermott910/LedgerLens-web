@@ -15,8 +15,11 @@ import ForecastTable from '@/components/ForecastTable';
 export const dynamic = 'force-dynamic';
 
 export default async function ClassPage({ params, searchParams }) {
+  // Only entity tabs (the ones carrying a `classes` list) are served by this route. The other
+  // TABS entries have their own static routes, which Next.js matches ahead of this catch-all --
+  // this guard is what keeps a stray URL from rendering an entity page with no classes.
   const tab = TABS.find((t) => t.key === params.cls);
-  if (!tab) notFound();
+  if (!tab || !tab.classes) notFound();
 
   // Periods, the trend range and the forecast horizon all come from the data now.
   const [monthRows, forecastMeta] = await Promise.all([fetchMonths(), fetchForecastMeta()]);

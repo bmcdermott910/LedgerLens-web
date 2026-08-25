@@ -25,6 +25,9 @@ tr.total-row td{font-weight:700;border-top:1.5px solid var(--navy2);}
 .period-tabs a{border:1px solid var(--border);background:#fff;padding:6px 12px;border-radius:6px;font-size:12.5px;cursor:pointer;color:var(--muted);text-decoration:none;}
 .period-tabs a.active{background:var(--navy);color:#fff;border-color:var(--navy);}
 .small-muted{font-size:11px;color:var(--muted);}
+/* Year column heads on the 5 Year Trend tab: the year reads as the heading, the
+   Actual/Forecast qualifier sits under it so the columns stay narrow. */
+.yr-sub{font-weight:500;font-size:10px;letter-spacing:0;text-transform:none;opacity:.75;margin-top:2px;}
 .login-box{max-width:380px;margin:80px auto;background:#fff;border:1px solid var(--border);border-radius:10px;padding:28px;}
 .login-box input{width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:6px;font-size:14px;margin:10px 0;}
 .login-box button{width:100%;padding:9px 10px;background:var(--navy);color:#fff;border:none;border-radius:6px;font-size:14px;cursor:pointer;}
