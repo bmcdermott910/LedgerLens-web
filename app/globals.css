@@ -81,3 +81,16 @@ tr.clickable-row:hover td{background:#eef3fc;}
 .key-drivers li{font-size:12.5px;line-height:1.8;color:var(--text);}
 .key-drivers li .kd-account{font-weight:600;color:var(--navy);}
 .trend-legend .dot.projected{background:#fff;border:1.5px solid #2f6fed;width:7px;height:7px;}
+
+/* Budget tab: 27 columns is wider than the page, so the table scrolls sideways inside its card
+   and the account column is pinned so the row label stays visible while scrolling. */
+.table-scroll{overflow-x:auto;}
+.budget-table{min-width:1800px;font-size:12px;}
+.budget-table th,.budget-table td{padding:5px 8px;white-space:nowrap;}
+.budget-table .sticky-col{position:sticky;left:0;z-index:2;background:var(--card);min-width:230px;
+  box-shadow:1px 0 0 var(--border);}
+.budget-table tr.total-row .sticky-col{background:var(--card);}
+.budget-table tr.section-hdr .sticky-col{background:#f8fafc;}
+.budget-table th.year-band{text-align:center;background:#f8fafc;color:var(--navy);
+  border-left:1.5px solid var(--border);}
+.budget-table .year-total{border-left:1px solid var(--border);font-weight:600;background:#fbfcfd;}
