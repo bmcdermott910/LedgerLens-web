@@ -55,7 +55,7 @@ export default async function FiveYearTrendPage() {
   ]);
   const glRows = await fetchGlRows(ALL_CLASSES, monthRows.map((m) => m.key));
 
-  const burn = monthlyBurnSeries(glRows, forecastRows, monthRows);
+  const burn = monthlyBurnSeries(glRows, forecastRows, monthRows, annualRows, [2027, 2028]);
   const quarters = buildQuarterlySeries(cashMetrics, burn, 2026, 2028);
   const lastReported = quarters.filter((q) => q.isActual).slice(-1)[0];
 
