@@ -9,6 +9,7 @@ const KINDS = {
   pct: { table: 'budget_pct', conflict: 'class_key,account,year' },
   aum: { table: 'budget_aum', conflict: 'year,month_num' },
   setting: { table: 'budget_settings', conflict: 'key,year' },
+  payIncrease: { table: 'budget_pay_increase', conflict: 'first_name,last_name,year' },
 };
 
 function bad(message, status = 400) {
@@ -43,6 +44,13 @@ export async function POST(request) {
     if (!body.year || !body.monthNum) return bad('Missing year or monthNum');
     if (num < 0) return bad('AUM cannot be negative');
     row = { year: Number(body.year), month_num: Number(body.monthNum), aum: num };
+  } else if (kind === 'payIncrease') {
+    if (!body.firstName || !body.lastName || !body.year) return bad('Missing firstName, lastName or year');
+    if (num < -100 || num > 100) return bad('Percentage must be between -100 and 100');
+    row = {
+      first_name: body.firstName, last_name: body.lastName,
+      year: Number(body.year), pct: num / 100,
+    };
   } else {
     if (!body.key || !body.year) return bad('Missing key or year');
     if (num < -100 || num > 100) return bad('Percentage must be between -100 and 100');

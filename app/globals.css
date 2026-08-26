@@ -36,6 +36,8 @@ tr.total-row td{font-weight:700;border-top:1.5px solid var(--navy2);}
  
 tr.clickable-row{cursor:pointer;}
 tr.clickable-row:hover td{background:#eef3fc;}
+td.clickable-cell{cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;}
+td.clickable-cell:hover{background:#eef3fc;}
  
 .drilldown-overlay{position:fixed;inset:0;background:rgba(15,42,74,.45);display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto;z-index:100;}
 .drilldown-panel{background:var(--card);border-radius:10px;padding:22px 24px;max-width:900px;width:100%;box-shadow:0 12px 40px rgba(15,42,74,.25);}

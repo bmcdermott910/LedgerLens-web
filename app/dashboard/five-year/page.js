@@ -76,7 +76,6 @@ export default async function FiveYearTrendPage() {
     wageBase: budgetInputs.wageBase,
     aum: budgetInputs.aum,
     pct: budgetInputs.pct,
-    payIncrease: budgetInputs.payIncrease,
     closedMonths: closedMonths.length,
     years: BUDGET_YEARS,
   }));

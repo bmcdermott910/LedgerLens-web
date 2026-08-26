@@ -1,8 +1,8 @@
 import { BUDGET_ENTITIES, BUDGET_YEARS } from '@/lib/finance';
 import { buildClassBudget, sumClassBudgets, buildWageSummary } from '@/lib/budget';
 import {
-  fetchBudgetInputs, fetchBudgetWagePeople, fetchForecastRows, fetchGlRows, fetchMonths,
-  fetchProfile,
+  fetchBudgetInputs, fetchBudgetWagePeople, fetchBudgetPayIncrease, fetchForecastRows,
+  fetchGlRows, fetchMonths, fetchProfile,
 } from '@/lib/queries';
 import { createClient } from '@/lib/supabase/server';
 import PeriodTabs from '@/components/PeriodTabs';
@@ -24,9 +24,10 @@ export default async function BudgetPage({ searchParams }) {
   const canEdit = profile?.role === 'admin';
   const wageClasses = profile?.wage_classes || [];
 
-  const [inputs, wagePeople, structure, monthRows] = await Promise.all([
+  const [inputs, wagePeople, personPct, structure, monthRows] = await Promise.all([
     fetchBudgetInputs(),
     fetchBudgetWagePeople(),
+    fetchBudgetPayIncrease(),
     fetchForecastRows(ALL_CLASSES),
     fetchMonths(),
   ]);
@@ -47,7 +48,6 @@ export default async function BudgetPage({ searchParams }) {
     wageBase: inputs.wageBase,
     aum: inputs.aum,
     pct: inputs.pct,
-    payIncrease: inputs.payIncrease,
     closedMonths: closedMonths.length,
     years: BUDGET_YEARS,
   }));
@@ -68,7 +68,13 @@ export default async function BudgetPage({ searchParams }) {
   // Per-person wages are row-level gated, so this is already limited to the classes this
   // person may see. Intersect with the displayed entity to work out whether to warn them.
   const visibleHere = entity.classes.filter((c) => wageClasses.includes(c));
-  const people = buildWageSummary(wagePeople, entity.classes, inputs.payIncrease, BUDGET_YEARS);
+  const pctByPerson = {};
+  personPct.forEach((p) => {
+    pctByPerson[`${p.first_name} ${p.last_name}|${p.year}`] = Number(p.pct) || 0;
+  });
+  const people = buildWageSummary(
+    wagePeople, entity.classes, pctByPerson, inputs.payIncrease, BUDGET_YEARS
+  );
   const restrictedTo = visibleHere.length && visibleHere.length < entity.classes.length
     ? visibleHere.join(', ')
     : null;
@@ -99,12 +105,21 @@ export default async function BudgetPage({ searchParams }) {
             : 'Only an admin can change them.'}
           {!singleClass && ' Adjustment percentages are set on an individual business unit, not on the combined total.'}
         </p>
+        <p className="small-muted">
+          Click a year total on any account budgeted from 2026 to see the vendors behind it —
+          each one&apos;s 2026 spend through {closedLabel}, annualised to twelve months and moved
+          by that account&apos;s adjustment percentage.
+        </p>
       </div>
-      <AumSchedule aum={inputs.aum} canEdit={canEdit} />
+      {/* The AUM schedule only drives RIA's Management Fee and Fee Cap Expense, so it is shown
+          on RIA and on the Wendal Total that contains it -- on InnerJoin and Admin it would be
+          a table of numbers that changes nothing on the page. */}
+      {entity.classes.includes('RIA') && <AumSchedule aum={inputs.aum} canEdit={canEdit} />}
       <div className="card">
         <BudgetTable
           rows={rows}
           classKey={singleClass}
+          classKeys={entity.classes}
           pctByKey={pctByKey}
           canEdit={canEdit && Boolean(singleClass)}
         />

@@ -29,21 +29,35 @@ export default function WageSummary({ people, payIncrease, canEdit, restrictedTo
         still run at the prior rate.
       </p>
       <p className="small-muted">
-        Pay increase:{' '}
-        {BUDGET_YEARS.map((y) => (
-          <span key={y} style={{ marginRight: 14 }}>
-            {y}{' '}
-            <DriverInput
-              payload={{ kind: 'setting', key: 'pay_increase_pct', year: y }}
-              value={((payIncrease[y] || 0) * 100).toFixed(1)}
-              display={`${((payIncrease[y] || 0) * 100).toFixed(1)}%`}
-              canEdit={canEdit}
-              width={58}
-              suffix="%"
-            />
+        Pay increases are set <strong>per employee</strong> in the % columns below and take effect
+        1 March; 2028 compounds on 2027. Anyone left at the default runs at the company-wide rate
+        ({BUDGET_YEARS.map((y, i) => (
+          <span key={y}>
+            {i ? ', ' : ''}{y} {((payIncrease[y] || 0) * 100).toFixed(1)}%
           </span>
         ))}
+        ){canEdit
+          ? ', which you can change here too — it applies to everyone without their own rate.'
+          : '.'}
       </p>
+      {canEdit && (
+        <p className="small-muted">
+          Company-wide default:{' '}
+          {BUDGET_YEARS.map((y) => (
+            <span key={y} style={{ marginRight: 14 }}>
+              {y}{' '}
+              <DriverInput
+                payload={{ kind: 'setting', key: 'pay_increase_pct', year: y }}
+                value={((payIncrease[y] || 0) * 100).toFixed(1)}
+                display={`${((payIncrease[y] || 0) * 100).toFixed(1)}%`}
+                canEdit={canEdit}
+                width={58}
+                suffix="%"
+              />
+            </span>
+          ))}
+        </p>
+      )}
       {restrictedTo && (
         <p className="stale-warning">
           You can see per-person wages for {restrictedTo} only, so this schedule covers those
@@ -56,10 +70,11 @@ export default function WageSummary({ people, payIncrease, canEdit, restrictedTo
             <tr>
               <th rowSpan={2}>Employee</th>
               <th rowSpan={2}>Monthly now</th>
-              {BUDGET_YEARS.map((y) => <th key={y} colSpan={3} className="year-band">{y}</th>)}
+              {BUDGET_YEARS.map((y) => <th key={y} colSpan={4} className="year-band">{y}</th>)}
             </tr>
             <tr>
               {BUDGET_YEARS.map((y) => [
+                <th key={`${y}-p`} className="pct-col">Increase</th>,
                 <th key={`${y}-o`}>Operating</th>,
                 <th key={`${y}-s`}>SG&amp;A</th>,
                 <th key={`${y}-t`} className="year-total">Total</th>,
@@ -72,6 +87,21 @@ export default function WageSummary({ people, payIncrease, canEdit, restrictedTo
                 <td>{p.name}</td>
                 <td>{fmt(p.operatingMonthly + p.sgaMonthly)}</td>
                 {BUDGET_YEARS.map((y) => [
+                  <td key={`${p.name}-${y}-p`} className="pct-col">
+                    <DriverInput
+                      payload={{
+                        kind: 'payIncrease',
+                        firstName: p.firstName,
+                        lastName: p.lastName,
+                        year: y,
+                      }}
+                      value={((p.pct?.[y] || 0) * 100).toFixed(1)}
+                      display={`${((p.pct?.[y] || 0) * 100).toFixed(1)}%`}
+                      canEdit={canEdit}
+                      width={58}
+                      suffix="%"
+                    />
+                  </td>,
                   <td key={`${p.name}-${y}-o`}>{fmt(p.years[y].operating)}</td>,
                   <td key={`${p.name}-${y}-s`}>{fmt(p.years[y].sga)}</td>,
                   <td key={`${p.name}-${y}-t`} className="year-total">{fmt(p.years[y].total)}</td>,
@@ -82,6 +112,7 @@ export default function WageSummary({ people, payIncrease, canEdit, restrictedTo
               <td>Total</td>
               <td>{fmt(people.reduce((s, p) => s + p.operatingMonthly + p.sgaMonthly, 0))}</td>
               {BUDGET_YEARS.map((y) => [
+                <td key={`t-${y}-p`} className="pct-col" />,
                 <td key={`t-${y}-o`}>{fmt(totalFor(y, 'operating'))}</td>,
                 <td key={`t-${y}-s`}>{fmt(totalFor(y, 'sga'))}</td>,
                 <td key={`t-${y}-t`} className="year-total">{fmt(totalFor(y, 'total'))}</td>,
