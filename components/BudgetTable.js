@@ -13,6 +13,7 @@ export default function BudgetTable({ rows }) {
         <thead>
           <tr>
             <th className="sticky-col" rowSpan={2}>Account</th>
+            <th className="method-col" rowSpan={2}>Budget Method</th>
             {BUDGET_YEARS.map((y) => (
               <th key={y} colSpan={13} className="year-band">{y}</th>
             ))}
@@ -32,13 +33,14 @@ export default function BudgetTable({ rows }) {
               <>
                 {showHeader && (
                   <tr className="section-hdr" key={`hdr-${r.section}-${i}`}>
-                    <td className="sticky-col" colSpan={27}>{r.section || ''}</td>
+                    <td className="sticky-col" colSpan={28}>{r.section || ''}</td>
                   </tr>
                 )}
                 <tr key={r.account} className={r.subtotal ? 'total-row' : ''}>
                   <td className="sticky-col" style={r.subtotal ? undefined : { paddingLeft: 18 }}>
                     {r.account}
                   </td>
+                  <td className="method-col small-muted">{r.methodLabel}</td>
                   {BUDGET_YEARS.map((y) => [
                     ...r.years[y].map((v, m) => <td key={`${r.account}-${y}-${m}`}>{fmt(v)}</td>),
                     <td key={`${r.account}-${y}-total`} className="year-total">{fmt(r.totals[y])}</td>,
