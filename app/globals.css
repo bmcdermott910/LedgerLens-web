@@ -107,3 +107,7 @@ td.clickable-cell:hover{background:#eef3fc;}
 .aum-table{font-size:12px;}
 .aum-table td,.aum-table th{padding:4px 8px;white-space:nowrap;}
 .budget-table .pct-col{min-width:78px;}
+
+.wide-chart{grid-column:1/-1;}
+.wide-chart .trend-legend{flex-wrap:wrap;gap:6px 18px;}
+.trend-legend i.dot{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:middle;}

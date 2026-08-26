@@ -1,8 +1,14 @@
+import ChartHover from './ChartHover';
+
 // Single-series line chart for standalone monthly metrics that have no budget comparison
 // (cash balance, doomsday clock). Same raw-SVG approach and visual language as TrendChart --
 // no charting library dependency -- but one line instead of actual-vs-budget, and a pluggable
 // value formatter so the same component handles dollars and plain numbers (e.g. "years").
-export default function MetricChart({ title, series, formatValue, subtitle }) {
+// `formatExact` is what the hover tooltip shows. It defaults to `formatValue`, the axis
+// formatter, but a chart whose axis is abbreviated to "$4.1M" should pass a formatter that
+// spells the figure out -- the point of hovering is to read the number, not the rounding.
+export default function MetricChart({ title, series, formatValue, formatExact, subtitle }) {
+  const exact = formatExact || formatValue;
   const width = 520;
   const height = 220;
   const padding = { top: 16, right: 16, bottom: 28, left: 64 };
@@ -60,6 +66,23 @@ export default function MetricChart({ title, series, formatValue, subtitle }) {
             </text>
           ) : null
         )}
+        <ChartHover
+          width={width}
+          xs={series.map((d, i) => x(i))}
+          plotTop={padding.top}
+          plotBottom={padding.top + plotH}
+          plotLeft={padding.left}
+          plotRight={width - padding.right}
+          entries={series.map((d) => ({
+            label: d.label,
+            rows: [{
+              name: title,
+              color: '#2f6fed',
+              text: exact(Number(d.value) || 0),
+              y: y(Number(d.value) || 0),
+            }],
+          }))}
+        />
       </svg>
       <div className="trend-legend">
         <span className="small-muted">

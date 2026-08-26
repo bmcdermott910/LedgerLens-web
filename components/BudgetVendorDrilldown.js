@@ -50,7 +50,9 @@ export default function BudgetVendorDrilldown({ account, classKeys, year, expect
           <p className="small-muted">
             2026 actuals through {data.throughMonth} ({data.closedMonths} month
             {data.closedMonths === 1 ? '' : 's'}) annualised × {data.annualise?.toFixed(2)}, then
-            adjusted {data.pcts}.
+            adjusted {data.pcts}. Most card and ACH lines carry no vendor name, so where the
+            field is blank the vendor is read out of the description and marked as such; anything
+            that cannot be named honestly is pooled into No vendor at the bottom.
           </p>
         )}
 
@@ -73,7 +75,12 @@ export default function BudgetVendorDrilldown({ account, classKeys, year, expect
             <tbody>
               {rows.map((r) => (
                 <tr key={r.vendor}>
-                  <td style={{ textAlign: 'left' }}>{r.vendor}</td>
+                  <td style={{ textAlign: 'left' }}>
+                    {r.vendor}
+                    {r.derived && (
+                      <span className="small-muted" title="Read out of the transaction description — the vendor field was blank"> ·  from description</span>
+                    )}
+                  </td>
                   <td>{r.count}</td>
                   <td>{fmt(r.actual2026)}</td>
                   <td>{fmt(r.budgeted)}</td>

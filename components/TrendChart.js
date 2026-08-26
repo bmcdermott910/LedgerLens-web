@@ -1,4 +1,8 @@
 import { fmt } from '@/lib/finance';
+import ChartHover from './ChartHover';
+
+const ACTUAL = '#2f6fed';
+const BUDGET = '#6b7685';
 
 // Compact dollar formatting for Y-axis tick labels, e.g. 45000 -> "$45k", -1250000 -> "-$1.3M".
 function fmtAxis(n) {
@@ -76,6 +80,21 @@ export default function TrendChart({ title, series }) {
             {d.month.slice(0, 3)}
           </text>
         ))}
+        <ChartHover
+          width={width}
+          xs={series.map((d, i) => x(i))}
+          plotTop={padding.top}
+          plotBottom={padding.top + plotH}
+          plotLeft={padding.left}
+          plotRight={width - padding.right}
+          entries={series.map((d) => ({
+            label: d.month,
+            rows: [
+              { name: 'Actual', color: ACTUAL, text: fmt(d.actual), y: y(d.actual) },
+              { name: 'Budget', color: BUDGET, text: fmt(d.budget), y: y(d.budget) },
+            ],
+          }))}
+        />
       </svg>
       <div className="trend-legend">
         <span><i className="dot actual" /> Actual</span>

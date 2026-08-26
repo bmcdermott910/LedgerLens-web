@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { fetchMonths, fetchTransactions } from '@/lib/queries';
+import { deriveVendor } from '@/lib/vendors';
 
 // GET /api/budget-vendors?classes=RIA,IJT&account=Software&year=2027
 //
@@ -54,14 +55,22 @@ export async function GET(request) {
 
     // Grouped by vendor. A vendor billing more than one business unit is scaled per class first,
     // because the adjustment percentage is set per class, and only then added together.
+    // Two thirds of transactions carry no vendor name at all -- card and ACH feeds put the
+    // merchant in the description instead. deriveVendor() recovers what it safely can and
+    // returns null for the rest, which keeps sharing one honest "No vendor" bucket.
     const byVendor = new Map();
     txns.forEach((t) => {
-      const vendor = (t.txn_name || '').trim() || '(no vendor named)';
+      const named = (t.txn_name || '').trim();
+      const derived = named ? null : deriveVendor(null, t.description);
+      const vendor = named || derived || 'No vendor';
       const raw = Number(t.amount) || 0;
-      const entry = byVendor.get(vendor) || { vendor, actual2026: 0, budgeted: 0, count: 0 };
+      const entry = byVendor.get(vendor)
+        || { vendor, actual2026: 0, budgeted: 0, count: 0, derived: false, unnamed: false };
       entry.actual2026 += raw;
       entry.budgeted += raw * annualise * pctFactor(t.class_key);
       entry.count += 1;
+      if (derived) entry.derived = true;
+      if (!named && !derived) entry.unnamed = true;
       byVendor.set(vendor, entry);
     });
 
@@ -71,7 +80,8 @@ export async function GET(request) {
         actual2026: Math.round(r.actual2026 * 100) / 100,
         budgeted: Math.round(r.budgeted * 100) / 100,
       }))
-      .sort((a, b) => Math.abs(b.budgeted) - Math.abs(a.budgeted));
+      // "No vendor" is a residual, not a vendor, so it sits at the bottom whatever its size.
+      .sort((a, b) => (a.unnamed - b.unnamed) || (Math.abs(b.budgeted) - Math.abs(a.budgeted)));
 
     const pcts = classKeys.map((c) => `${c} ${((pctFactor(c) - 1) * 100).toFixed(1)}%`).join(', ');
     return NextResponse.json({

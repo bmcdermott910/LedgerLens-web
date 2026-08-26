@@ -1,10 +1,16 @@
+import ChartHover from './ChartHover';
+
 // Quarterly single-series line chart for the 5 Year Trend tab. Same visual language as
 // MetricChart, with two differences that the forward-looking view needs:
 //   - a null value is a gap, not a zero, so quarters whose budget does not exist yet simply
 //     stop the line instead of dragging it to the floor;
 //   - actual quarters draw solid, projected quarters dashed and hollow, so nobody mistakes a
 //     forecast point for a reported one.
-export default function QuarterChart({ title, points, valueKey, formatValue, subtitle }) {
+export default function QuarterChart({
+  title, points, valueKey, formatValue, formatExact, subtitle,
+}) {
+  // See MetricChart: the axis may abbreviate, the tooltip should not.
+  const exact = formatExact || formatValue;
   const width = 520;
   const height = 220;
   const padding = { top: 16, right: 16, bottom: 28, left: 64 };
@@ -82,6 +88,27 @@ export default function QuarterChart({ title, points, valueKey, formatValue, sub
             </text>
           ) : null
         )}
+        <ChartHover
+          width={width}
+          xs={points.map((p, i) => x(i))}
+          plotTop={padding.top}
+          plotBottom={padding.top + plotH}
+          plotLeft={padding.left}
+          plotRight={width - padding.right}
+          entries={points.map((p) => {
+            const v = p[valueKey];
+            const has = v !== null && v !== undefined && Number.isFinite(Number(v));
+            return {
+              label: p.label,
+              rows: [{
+                name: p.isActual ? 'Reported' : 'Projected',
+                color: '#2f6fed',
+                text: has ? exact(Number(v)) : 'no data yet',
+                y: has ? y(Number(v)) : null,
+              }],
+            };
+          })}
+        />
       </svg>
       <div className="trend-legend">
         <span><span className="dot actual" /> Reported</span>

@@ -10,6 +10,7 @@ import PeriodTabs from '@/components/PeriodTabs';
 import GlTable from '@/components/GlTable';
 import WageTable from '@/components/WageTable';
 import TrendChart from '@/components/TrendChart';
+import RevenueExpenseChart from '@/components/RevenueExpenseChart';
 import ForecastTable from '@/components/ForecastTable';
 
 export const dynamic = 'force-dynamic';
@@ -48,6 +49,17 @@ export default async function ClassPage({ params, searchParams }) {
     ? visibleWageClasses.join(', ')
     : null;
   const trend = buildTrendSeries(trendRows, model.trendMonths);
+
+  // The wide chart at the foot of the page. Total Expenses is COGS plus SG&A only -- other
+  // income and other expense are deliberately out, so the two lines answer "what did we sell and
+  // what did it cost to operate", not "what was net income".
+  const revenueExpenseSeries = trend.map((t) => ({
+    label: t.month,
+    revenue: t.revenue.actual,
+    revenueBudget: t.revenue.budget,
+    expenses: t.cogs.actual + t.sga.actual,
+    expensesBudget: t.cogs.budget + t.sga.budget,
+  }));
 
   // The forecast picks up where actuals stop, so it only renders on the period that ends at the
   // last completed month -- which period that is now depends on whether a partial month is loaded.
@@ -129,6 +141,19 @@ export default async function ClassPage({ params, searchParams }) {
             <TrendChart title="Marketing (all accounts)" series={trend.map((t) => ({ month: t.month, ...t.marketing }))} />
             <TrendChart title="Wages + Subcontractor" series={trend.map((t) => ({ month: t.month, ...t.wagesSubcontractor }))} />
           </div>
+        </div>
+      )}
+      {revenueExpenseSeries.length > 1 && (
+        <div className="card">
+          <RevenueExpenseChart
+            title={`${tab.label} — Revenue and Expenses vs. Budget, ${model.trendRangeLabel}`}
+            series={revenueExpenseSeries}
+            subtitle={
+              'Total Expenses is Total for Cost of Goods Sold plus Total for Expenses — other '
+              + 'income and other expense are excluded. Hover any month to read the four figures. '
+              + 'Only closed months are plotted, so a part-month never reads as a fall-off.'
+            }
+          />
         </div>
       )}
     </div>

@@ -49,6 +49,14 @@ function fmtCash(n) {
   return (neg ? '-$' : '$') + s;
 }
 
+// The tooltip spells the same figure out in full -- the axis abbreviation is there to keep the
+// labels short, not because anyone wants to read cash to the nearest hundred thousand.
+function fmtCashExact(n) {
+  const neg = n < 0;
+  const v = '$' + Math.abs(Math.round(n)).toLocaleString();
+  return neg ? '-' + v : v;
+}
+
 function fmtYears(n) {
   return Number(n).toFixed(2);
 }
@@ -150,6 +158,7 @@ export default async function FiveYearTrendPage() {
             points={quarters}
             valueKey="cash"
             formatValue={fmtCash}
+            formatExact={fmtCashExact}
           />
           <QuarterChart
             title="Doomsday Clock (Years)"
