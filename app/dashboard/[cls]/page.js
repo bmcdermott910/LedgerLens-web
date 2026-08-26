@@ -3,7 +3,7 @@ import { TABS, combinedRows, combineWagesByPerson, buildTrendSeries, buildForeca
 import { buildPeriodModel, resolvePeriod } from '@/lib/periods';
 import {
   fetchGlRows, fetchWagesByPerson, fetchEmployeeBudgets, fetchForecastRows, fetchForecastRules,
-  fetchForecastOverrides, fetchMonths, fetchForecastMeta,
+  fetchForecastOverrides, fetchMonths, fetchForecastMeta, fetchProfile,
 } from '@/lib/queries';
 import { createClient } from '@/lib/supabase/server';
 import PeriodTabs from '@/components/PeriodTabs';
@@ -36,6 +36,17 @@ export default async function ClassPage({ params, searchParams }) {
     fetchGlRows(tab.classes, model.trendMonths),
   ]);
   const people = combineWagesByPerson(wageRows, budgetRows, tab.classes, period.months.length);
+
+  // Per-person wages are gated per class, so someone entitled to only part of this tab's classes
+  // sees a partial list. Work out whether to say so; the GL wage totals are unaffected either way.
+  const supabaseForProfile = createClient();
+  const { data: { user: viewer } } = await supabaseForProfile.auth.getUser();
+  const viewerProfile = viewer ? await fetchProfile(supabaseForProfile, viewer.id) : null;
+  const wageClasses = viewerProfile?.wage_classes || [];
+  const visibleWageClasses = tab.classes.filter((c) => wageClasses.includes(c));
+  const wagesRestrictedTo = visibleWageClasses.length && visibleWageClasses.length < tab.classes.length
+    ? visibleWageClasses.join(', ')
+    : null;
   const trend = buildTrendSeries(trendRows, model.trendMonths);
 
   // The forecast picks up where actuals stop, so it only renders on the period that ends at the
@@ -96,6 +107,15 @@ export default async function ClassPage({ params, searchParams }) {
       )}
       <div className="card">
         <h2>Wages by Person</h2>
+        {wagesRestrictedTo && (
+          <p className="stale-warning">
+            You can see per-person wages for {wagesRestrictedTo} only, so this list covers those
+            people alone. The wage totals in the table above are unaffected.
+          </p>
+        )}
+        {!people.length && !wagesRestrictedTo && (
+          <p className="small-muted">Per-person wages are restricted for your account.</p>
+        )}
         <WageTable people={people} />
       </div>
       {model.trendMonths.length > 1 && (

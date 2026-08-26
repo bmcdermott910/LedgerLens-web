@@ -1,10 +1,23 @@
 import { BUDGET_YEARS, fmt } from '@/lib/finance';
+import DriverInput from './DriverInput';
 
 // The employee schedule under the budget table: everyone whose pay hits the displayed business
 // unit, their annual cost in each budget year, split Operating vs SG&A. These figures add up to
 // the Operating Wages and SG&A Wages lines in the table above, to the penny.
-export default function WageSummary({ people, payIncrease }) {
-  if (!people.length) return null;
+export default function WageSummary({ people, payIncrease, canEdit, restrictedTo }) {
+  // Someone whose wage access covers only part of the displayed entity sees only their own
+  // people, so this schedule will not add up to the wage lines above it. Say so rather than
+  // leaving them to wonder whether the numbers are wrong.
+  if (!people.length) {
+    return (
+      <div className="card">
+        <h2>Budgeted Wages by Employee</h2>
+        <p className="small-muted">
+          Per-person wages are restricted. The wage totals in the table above are unaffected.
+        </p>
+      </div>
+    );
+  }
   const totalFor = (year, key) => people.reduce((s, p) => s + p.years[year][key], 0);
 
   return (
@@ -12,10 +25,31 @@ export default function WageSummary({ people, payIncrease }) {
       <h2>Budgeted Wages by Employee</h2>
       <p className="small-muted">
         Monthly pay is the 31 July plus 15 August 2026 payroll journal entries — one month at the
-        current run rate. Pay increases of{' '}
-        {BUDGET_YEARS.map((y) => `${((payIncrease[y] || 0) * 100).toFixed(1)}% in ${y}`).join(' and ')}{' '}
-        take effect 1 March, so January and February each year still run at the prior rate.
+        current run rate. Pay increases take effect 1 March, so January and February each year
+        still run at the prior rate.
       </p>
+      <p className="small-muted">
+        Pay increase:{' '}
+        {BUDGET_YEARS.map((y) => (
+          <span key={y} style={{ marginRight: 14 }}>
+            {y}{' '}
+            <DriverInput
+              payload={{ kind: 'setting', key: 'pay_increase_pct', year: y }}
+              value={((payIncrease[y] || 0) * 100).toFixed(1)}
+              display={`${((payIncrease[y] || 0) * 100).toFixed(1)}%`}
+              canEdit={canEdit}
+              width={58}
+              suffix="%"
+            />
+          </span>
+        ))}
+      </p>
+      {restrictedTo && (
+        <p className="stale-warning">
+          You can see per-person wages for {restrictedTo} only, so this schedule covers those
+          people alone and will not add up to the wage lines in the table above.
+        </p>
+      )}
       <div className="table-scroll">
         <table>
           <thead>

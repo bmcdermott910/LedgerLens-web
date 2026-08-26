@@ -1,10 +1,11 @@
 import { BUDGET_YEARS, MONTH_SHORT, fmt } from '@/lib/finance';
+import DriverInput from './DriverInput';
 
 // Detailed monthly P&L for the budget years: every account of the Forecast tab, twelve monthly
 // columns per year, each year closing with its own total. Twenty-seven columns is wider than the
 // page, so the whole table scrolls sideways inside its card and the account column is pinned so
 // you never lose your place while scrolling.
-export default function BudgetTable({ rows }) {
+export default function BudgetTable({ rows, classKey, pctByKey, canEdit }) {
   let lastSection = null;
 
   return (
@@ -14,6 +15,9 @@ export default function BudgetTable({ rows }) {
           <tr>
             <th className="sticky-col" rowSpan={2}>Account</th>
             <th className="method-col" rowSpan={2}>Budget Method</th>
+            {BUDGET_YEARS.map((y) => (
+              <th key={`pct-${y}`} className="pct-col" rowSpan={2}>{y} adj %</th>
+            ))}
             {BUDGET_YEARS.map((y) => (
               <th key={y} colSpan={13} className="year-band">{y}</th>
             ))}
@@ -33,7 +37,7 @@ export default function BudgetTable({ rows }) {
               <>
                 {showHeader && (
                   <tr className="section-hdr" key={`hdr-${r.section}-${i}`}>
-                    <td className="sticky-col" colSpan={28}>{r.section || ''}</td>
+                    <td className="sticky-col" colSpan={30}>{r.section || ''}</td>
                   </tr>
                 )}
                 <tr key={r.account} className={r.subtotal ? 'total-row' : ''}>
@@ -41,6 +45,20 @@ export default function BudgetTable({ rows }) {
                     {r.account}
                   </td>
                   <td className="method-col small-muted">{r.methodLabel}</td>
+                  {BUDGET_YEARS.map((y) => (
+                    <td key={`${r.account}-pct-${y}`} className="pct-col">
+                      {r.method === 'annualized_2026' && classKey ? (
+                        <DriverInput
+                          payload={{ kind: 'pct', classKey, account: r.account, year: y }}
+                          value={((pctByKey[`${r.account}|${y}`] || 0) * 100).toFixed(1)}
+                          display={`${((pctByKey[`${r.account}|${y}`] || 0) * 100).toFixed(1)}%`}
+                          canEdit={canEdit}
+                          width={58}
+                          suffix="%"
+                        />
+                      ) : ''}
+                    </td>
+                  ))}
                   {BUDGET_YEARS.map((y) => [
                     ...r.years[y].map((v, m) => <td key={`${r.account}-${y}-${m}`}>{fmt(v)}</td>),
                     <td key={`${r.account}-${y}-total`} className="year-total">{fmt(r.totals[y])}</td>,

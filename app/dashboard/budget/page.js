@@ -1,11 +1,14 @@
 import { BUDGET_ENTITIES, BUDGET_YEARS } from '@/lib/finance';
 import { buildClassBudget, sumClassBudgets, buildWageSummary } from '@/lib/budget';
 import {
-  fetchBudgetInputs, fetchForecastRows, fetchGlRows, fetchMonths,
+  fetchBudgetInputs, fetchBudgetWagePeople, fetchForecastRows, fetchGlRows, fetchMonths,
+  fetchProfile,
 } from '@/lib/queries';
+import { createClient } from '@/lib/supabase/server';
 import PeriodTabs from '@/components/PeriodTabs';
 import BudgetTable from '@/components/BudgetTable';
 import WageSummary from '@/components/WageSummary';
+import AumSchedule from '@/components/AumSchedule';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,15 +18,21 @@ export default async function BudgetPage({ searchParams }) {
   const entity =
     BUDGET_ENTITIES.find((e) => e.key === searchParams?.entity) || BUDGET_ENTITIES[0];
 
-  const [inputs, structure, monthRows] = await Promise.all([
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const profile = user ? await fetchProfile(supabase, user.id) : null;
+  const canEdit = profile?.role === 'admin';
+  const wageClasses = profile?.wage_classes || [];
+
+  const [inputs, wagePeople, structure, monthRows] = await Promise.all([
     fetchBudgetInputs(),
+    fetchBudgetWagePeople(),
     fetchForecastRows(ALL_CLASSES),
     fetchMonths(),
   ]);
 
   // The annualisation base is 2026 actuals through the last CLOSED month, so a partial month
-  // never drags the run rate down. Derived from the months table rather than hardcoded, so it
-  // moves on its own as months are loaded.
+  // never drags the run rate down. Derived from the months table rather than hardcoded.
   const closedMonths = monthRows.filter((m) => m.is_complete);
   const glRows = await fetchGlRows(ALL_CLASSES, closedMonths.map((m) => m.key));
   const closedLabel = closedMonths.length
@@ -44,17 +53,25 @@ export default async function BudgetPage({ searchParams }) {
   }));
 
   const byClass = Object.fromEntries(ALL_CLASSES.map((c, i) => [c, perClass[i]]));
-  const rows = entity.classes.length === 1
-    ? byClass[entity.classes[0]]
+  const singleClass = entity.classes.length === 1 ? entity.classes[0] : null;
+  const rows = singleClass
+    ? byClass[singleClass]
     : sumClassBudgets(entity.classes.map((c) => byClass[c]), BUDGET_YEARS);
 
-  const people = buildWageSummary(
-    inputs.wageBase, entity.classes, inputs.payIncrease, BUDGET_YEARS
-  );
+  // The % adjustments are per class, so they are only editable on a single-class view --
+  // there is no one number to change on the combined Wendal Total.
+  const pctByKey = {};
+  inputs.pct
+    .filter((p) => p.class_key === singleClass)
+    .forEach((p) => { pctByKey[`${p.account}|${p.year}`] = Number(p.pct) || 0; });
 
-  const aumRows = inputs.aum
-    .filter((a) => a.month_num === 1 || a.month_num === 4 || a.month_num === 7 || a.month_num === 10)
-    .sort((a, b) => a.year - b.year || a.month_num - b.month_num);
+  // Per-person wages are row-level gated, so this is already limited to the classes this
+  // person may see. Intersect with the displayed entity to work out whether to warn them.
+  const visibleHere = entity.classes.filter((c) => wageClasses.includes(c));
+  const people = buildWageSummary(wagePeople, entity.classes, inputs.payIncrease, BUDGET_YEARS);
+  const restrictedTo = visibleHere.length && visibleHere.length < entity.classes.length
+    ? visibleHere.join(', ')
+    : null;
 
   return (
     <div>
@@ -75,20 +92,29 @@ export default async function BudgetPage({ searchParams }) {
           summed. Subtotals are derived from the detail, so they always foot.
         </p>
         <p className="small-muted">
-          AUM schedule driving Management Fee and Fee Cap Expense:{' '}
-          {aumRows.map((a) => `Q${Math.floor((a.month_num - 1) / 3) + 1} ${a.year} $${(Number(a.aum) / 1e6).toFixed(0)}M`).join(' · ')}
-        </p>
-        <p className="stale-warning">
-          Read-only for now. The manual adjustments — a % increase or decrease per account per
-          year, the AUM schedule and the pay increase — are stored as drivers and currently sit at
-          their defaults (0% account adjustments, 3% pay increases). Editing them in the browser is
-          the next step.
+          The adjustment percentages, the AUM schedule and the pay increases are{' '}
+          <strong>shared</strong> — one plan of record everyone sees, not personal what-ifs.{' '}
+          {canEdit
+            ? 'Click any of them to change it; every figure here and on the 5 Year Trend tab recomputes.'
+            : 'Only an admin can change them.'}
+          {!singleClass && ' Adjustment percentages are set on an individual business unit, not on the combined total.'}
         </p>
       </div>
+      <AumSchedule aum={inputs.aum} canEdit={canEdit} />
       <div className="card">
-        <BudgetTable rows={rows} />
+        <BudgetTable
+          rows={rows}
+          classKey={singleClass}
+          pctByKey={pctByKey}
+          canEdit={canEdit && Boolean(singleClass)}
+        />
       </div>
-      <WageSummary people={people} payIncrease={inputs.payIncrease} />
+      <WageSummary
+        people={people}
+        payIncrease={inputs.payIncrease}
+        canEdit={canEdit}
+        restrictedTo={restrictedTo}
+      />
     </div>
   );
 }

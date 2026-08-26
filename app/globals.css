@@ -95,3 +95,13 @@ tr.clickable-row:hover td{background:#eef3fc;}
   border-left:1.5px solid var(--border);}
 .budget-table .year-total{border-left:1px solid var(--border);font-weight:600;background:#fbfcfd;}
 .budget-table .method-col{text-align:left;color:var(--muted);font-size:11px;min-width:150px;}
+
+/* Shared budget drivers: click-to-edit cells on the Budget tab. */
+.driver-cell{cursor:pointer;border-bottom:1px dashed var(--accent);color:var(--accent);}
+.driver-cell:hover{background:#eef3fc;}
+.driver-edit input{font-size:12px;padding:2px 4px;border:1px solid var(--accent);border-radius:4px;}
+.driver-edit button{margin-left:3px;font-size:11px;padding:2px 6px;cursor:pointer;}
+.driver-error{display:block;color:var(--red);font-size:11px;}
+.aum-table{font-size:12px;}
+.aum-table td,.aum-table th{padding:4px 8px;white-space:nowrap;}
+.budget-table .pct-col{min-width:78px;}
