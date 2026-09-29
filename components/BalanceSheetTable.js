@@ -13,6 +13,19 @@ export default function BalanceSheetTable({ columns, values, detail }) {
   const [open, setOpen] = useState({});
   const toggle = (key) => setOpen((o) => ({ ...o, [key]: !o[key] }));
 
+  // A detail line that is exactly zero in every column shown is dropped -- Inventories and
+  // Payroll and related liabilities are on the statement because the BOD format has them, not
+  // because Wendal carries a balance. Subtotals, totals and the section headers always stay,
+  // so the shape of the statement never changes.
+  //
+  // The test is the exact balance, not the rounded one. A line holding $400 prints as 0 at
+  // $000s but is still part of its subtotal; hiding it would leave a column that visibly does
+  // not add up and no way to see why.
+  const rows = BS_ROWS.filter((r) => {
+    if (r.header || r.sum) return true;
+    return columns.some((c) => Number(values[r.key]?.[c.key] || 0) !== 0);
+  });
+
   return (
     <div className="card">
       <h2>Wendal Inc. (RIA + IJT + Admin) — Balance Sheet</h2>
@@ -29,7 +42,7 @@ export default function BalanceSheetTable({ columns, values, detail }) {
           </tr>
         </thead>
         <tbody>
-          {BS_ROWS.map((r) => {
+          {rows.map((r) => {
             if (r.header) {
               return (
                 <tr key={r.key} className="bs-section">
