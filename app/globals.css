@@ -111,3 +111,10 @@ td.clickable-cell:hover{background:#eef3fc;}
 .wide-chart{grid-column:1/-1;}
 .wide-chart .trend-legend{flex-wrap:wrap;gap:6px 18px;}
 .trend-legend i.dot{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:middle;}
+
+/* Board Summary — Balance Sheet ------------------------------------------- */
+.bs-section td{font-weight:600;color:var(--navy);background:#f8fafc;padding-top:8px;}
+.bs-expand{background:none;border:none;padding:0;font:inherit;color:inherit;cursor:pointer;text-align:left;}
+.bs-expand:hover{color:var(--accent);}
+.bs-caret{display:inline-block;width:14px;color:var(--muted);}
+.bs-detail td{color:#556;font-size:12px;border-bottom:1px dotted var(--border);}
