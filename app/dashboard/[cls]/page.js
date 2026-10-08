@@ -81,7 +81,7 @@ export default async function ClassPage({ params, searchParams }) {
       user ? fetchForecastOverrides(supabase, user.id, tab.key) : Promise.resolve([]),
     ]);
     forecastRowsBuilt = reorderToMatch(
-      buildForecastRows(baseline, rules, overrides, tab.classes, model.forecastMonthCount, accountOrder),
+      buildForecastRows(baseline, rules, overrides, tab.classes, model.forecastMonthCount, accountOrder, model.forecastBaseLabel),
       combined
     );
   }
