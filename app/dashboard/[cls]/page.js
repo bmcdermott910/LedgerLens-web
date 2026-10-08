@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { TABS, combinedRows, combineWagesByPerson, buildTrendSeries, buildForecastRows, reorderToMatch } from '@/lib/finance';
 import { buildPeriodModel, resolvePeriod } from '@/lib/periods';
 import {
-  fetchGlRows, fetchWagesByPerson, fetchEmployeeBudgets, fetchForecastRows, fetchForecastRules,
+  fetchGlRows, fetchAccountOrder, fetchWagesByPerson, fetchEmployeeBudgets, fetchForecastRows, fetchForecastRules,
   fetchForecastOverrides, fetchMonths, fetchForecastMeta, fetchProfile,
 } from '@/lib/queries';
 import { createClient } from '@/lib/supabase/server';
@@ -28,8 +28,13 @@ export default async function ClassPage({ params, searchParams }) {
   const period = resolvePeriod(model, searchParams?.period);
   if (!period) notFound();
 
-  const rows = await fetchGlRows(tab.classes, period.months);
-  const combined = combinedRows(rows);
+  // accountOrder is the canonical row sequence from the QuickBooks class reports. Both tables on
+  // this tab are built against it, so the statement reads the way the source report does.
+  const [rows, accountOrder] = await Promise.all([
+    fetchGlRows(tab.classes, period.months),
+    fetchAccountOrder(),
+  ]);
+  const combined = combinedRows(rows, accountOrder);
 
   const [wageRows, budgetRows, trendRows] = await Promise.all([
     fetchWagesByPerson(tab.classes, period.months),
@@ -76,7 +81,7 @@ export default async function ClassPage({ params, searchParams }) {
       user ? fetchForecastOverrides(supabase, user.id, tab.key) : Promise.resolve([]),
     ]);
     forecastRowsBuilt = reorderToMatch(
-      buildForecastRows(baseline, rules, overrides, tab.classes, model.forecastMonthCount),
+      buildForecastRows(baseline, rules, overrides, tab.classes, model.forecastMonthCount, accountOrder),
       combined
     );
   }

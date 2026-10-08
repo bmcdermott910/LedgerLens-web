@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { fmt, fmtVar, isFlippedRow, hideRedundantRows } from '@/lib/finance';
+import { fmt, fmtVar, isFlippedRow, visibleStatementRows } from '@/lib/finance';
 
 // Each leaf row: click the monthly forecast to switch between the calculated default and a
 // custom monthly dollar amount. Overrides save per-user, per-entity-tab and cascade through any
@@ -76,7 +76,10 @@ function ForecastCell({ row, tabKey, onSaved }) {
 export default function ForecastTable({ rows, tabKey }) {
   const router = useRouter();
   let lastSection = null;
-  const visibleRows = hideRedundantRows(rows);
+  // The forecast table prints every account it has a forecast for, including ones the GL table
+  // drops for having no activity this period, so nothing is treated as empty here. The
+  // single-line-total rule still applies.
+  const visibleRows = visibleStatementRows(rows, () => false);
 
   return (
     <table>
@@ -104,7 +107,7 @@ export default function ForecastTable({ rows, tabKey }) {
                 </tr>
               )}
               <tr key={r.account} className={r.subtotal ? 'total-row' : ''}>
-                <td style={r.subtotal ? undefined : { paddingLeft: 18 }}>{r.account}</td>
+                <td style={{ paddingLeft: 18 * (r.depth ?? (r.subtotal ? 0 : 1)) }}>{r.account}</td>
                 <td style={{ textAlign: 'left' }} className="small-muted">{r.method}</td>
                 <ForecastCell row={r} tabKey={tabKey} onSaved={() => router.refresh()} />
                 <td>{fmt(r.forecastTotal)}</td>

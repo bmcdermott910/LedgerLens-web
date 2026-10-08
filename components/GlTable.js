@@ -1,7 +1,7 @@
 'use client';
  
 import { useState } from 'react';
-import { isFlippedRow, fmt, hideRedundantRows } from '@/lib/finance';
+import { isFlippedRow, fmt, visibleStatementRows } from '@/lib/finance';
 import Var from './Var';
 import TransactionDrilldown from './TransactionDrilldown';
  
@@ -11,7 +11,7 @@ import TransactionDrilldown from './TransactionDrilldown';
 export default function GlTable({ rows, classKeys, monthKeys }) {
   const [selectedAccount, setSelectedAccount] = useState(null);
   let lastSection = null;
-  const visibleRows = hideRedundantRows(rows).filter((r) => r.actual !== 0 || r.budget !== 0);
+  const visibleRows = visibleStatementRows(rows);
  
   return (
     <>
@@ -37,7 +37,7 @@ export default function GlTable({ rows, classKeys, monthKeys }) {
                   className={r.subtotal ? 'total-row' : clickable ? 'clickable-row' : ''}
                   onClick={clickable ? () => setSelectedAccount(r.account) : undefined}
                 >
-                  <td style={r.subtotal ? undefined : { paddingLeft: 18 }}>{r.account}</td>
+                  <td style={{ paddingLeft: 18 * (r.depth ?? (r.subtotal ? 0 : 1)) }}>{r.account}</td>
                   <td>{fmt(r.actual)}</td>
                   <td>{fmt(r.budget)}</td>
                   <td><Var actual={r.actual} budget={r.budget} flip={flip} /></td>
